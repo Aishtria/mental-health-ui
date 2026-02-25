@@ -1,210 +1,191 @@
 <template>
   <div class="mood-app">
-    <div class="card">
-      <h2>🧍 Mood Check-in</h2>
-      
-      <div class="form-group">
-        <label for="name">Full Name</label>
-        <input 
-          id="name"
-          v-model="name" 
-          placeholder="Enter your name..." 
-          :disabled="loading" 
-        />
+    <h2>🧍 Mood Check-in</h2>
 
-        <label for="mood">How are you feeling?</label>
-        <textarea 
-          id="mood"
-          v-model="mood" 
-          placeholder="Describe your current mood or thoughts..." 
-          :disabled="loading"
-        ></textarea>
-        
-        <button @click="submitMood" :disabled="loading || !mood">
-          <span v-if="loading">⏳ Processing...</span>
-          <span v-else>Submit Mood</span>
-        </button>
-      </div>
+    <div class="form-group">
+      <label for="name">Full Name</label>
+      <input
+        id="name"
+        v-model="name"
+        placeholder="Enter your full name..."
+      />
 
-      <p v-if="error" class="error-msg">❌ {{ error }}</p>
+      <label for="mood">How are you feeling?</label>
+      <textarea
+        id="mood"
+        v-model="mood"
+        placeholder="Describe your current mood..."
+      ></textarea>
 
-      <div v-if="aiMessage" class="response-box">
-        <h3>✨ AI Advisor:</h3>
-        <p>{{ aiMessage }}</p>
-      </div>
+      <button @click="submitEntry" :disabled="!name || !mood">
+        Submit Mood
+      </button>
     </div>
 
-    <div v-if="history.length > 0" class="history-section">
-      <h3>📜 Recent History</h3>
-      <ul>
-        <li v-for="(item, index) in history" :key="index">
-          <span class="time-stamp">{{ item.time }}</span>
-          <span class="history-text">{{ item.text }}</span>
-        </li>
-      </ul>
+    <div class="chatbox" ref="chatbox">
+      <div
+        v-for="(entry, index) in history"
+        :key="index"
+        :class="['message', entry.sender]"
+      >
+        <p>{{ entry.text }}</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import api from '../services/api';
+import api from '../services/api'; 
 
 export default {
+  name: "MoodForm",
   data() {
     return {
-      name: '',
-      mood: '',
-      aiMessage: '',
-      loading: false,
-      error: null,
-      history: [] 
+      name: "",
+      mood: "",
+      history: [],
     };
   },
   methods: {
-    async submitMood() {
-      this.loading = true;
-      this.error = null;
-      try {
-        const res = await api.post('/', {
-          full_name: this.name,
-          mood_text: this.mood
-        });
-        
-        this.aiMessage = res.data.ai_message;
-
-        // Add to history list with current time
-        this.history.unshift({
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          text: this.mood
-        });
-
-        this.mood = ''; // Clear input field
-      } catch (err) {
-        this.error = "Connection failed. Please ensure the api-server is running on Port 5001.";
-      } finally {
-        this.loading = false;
+    getAIResponse(moodText) {
+      const lower = moodText.toLowerCase();
+      if (lower.includes("happy") || lower.includes("joy") || lower.includes("excited")) {
+        return "That's wonderful! Keep spreading positivity 😊";
+      } else if (lower.includes("sad") || lower.includes("down") || lower.includes("crying")) {
+        return "I'm sorry to hear that. Remember to take deep breaths and maybe talk to someone you trust 💛";
+      } else if (lower.includes("angry") || lower.includes("frustrated")) {
+        return "It’s okay to feel anger. Try calming exercises or go for a short walk 💨";
+      } else if (lower.includes("anxious") || lower.includes("nervous")) {
+        return "Take a few moments to breathe deeply. Mindfulness helps 🧘‍♀️";
+      } else {
+        return "Thank you for sharing your feelings! Every emotion is valid 🌟";
       }
-    }
-  }
+    },
+    async submitEntry() {
+      // 1. Capture current values
+      const currentName = this.name;
+      const currentMood = this.mood;
+
+      // 2. Add user message to the UI history
+      this.history.push({
+        sender: "user",
+        text: `${currentName}: ${currentMood}`,
+      });
+
+      // 3. Send to Backend (Render -> Railway)
+      try {
+        await api.post('/mood', {
+          full_name: currentName,
+          mood_text: currentMood
+        });
+        console.log("✅ Data saved to Railway successfully!");
+      } catch (error) {
+        console.error("❌ Database error:", error);
+        this.history.push({
+          sender: "ai",
+          text: "System: Note saved locally, but database connection failed."
+        });
+      }
+
+      // 4. Generate and show AI response
+      const aiReply = this.getAIResponse(currentMood);
+      this.history.push({
+        sender: "ai",
+        text: `AI Advisor: ${aiReply}`,
+      });
+
+      // 5. Reset input and scroll down
+      this.mood = "";
+      this.$nextTick(() => {
+        const box = this.$refs.chatbox;
+        if (box) {
+          box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+        }
+      });
+    },
+  },
 };
 </script>
 
 <style scoped>
-/* Main Container */
-.mood-app { 
-  font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
-  max-width: 550px; 
-  margin: 40px auto; 
-  padding: 0 20px;
-  color: #2d3748;
+.mood-app {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
-/* Main Card */
-.card { 
-  padding: 30px; 
-  border-radius: 16px; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-  background: #ffffff; 
-  border: 1px solid #e2e8f0; 
+h2 { color: #2c3e50; text-align: center; }
+
+.form-group { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+  margin-bottom: 25px; 
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
 }
 
-h2 { 
-  margin: 0 0 20px 0; 
-  color: #1a202c; 
-  text-align: center;
-  font-size: 1.6rem;
-}
-
-/* Form Styling */
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-
-label {
-  font-weight: 600;
-  font-size: 14px;
-  color: #4a5568;
-  margin-top: 10px;
-}
+label { font-weight: bold; color: #4a5568; }
 
 input, textarea { 
   padding: 12px; 
-  border: 2px solid #edf2f7; 
-  border-radius: 10px; 
-  font-size: 15px; 
-  transition: all 0.3s ease;
-  font-family: inherit;
+  border-radius: 8px; 
+  border: 1px solid #cbd5e0; 
+  font-size: 16px;
 }
 
-input:focus, textarea:focus {
-  outline: none;
-  border-color: #42b883;
-  background: #fff;
-}
+textarea { resize: vertical; min-height: 80px; }
 
-textarea { height: 100px; resize: vertical; }
-
-/* Button Styling */
 button { 
-  margin-top: 15px;
-  padding: 14px; 
+  padding: 12px; 
   background: #42b883; 
   color: white; 
   border: none; 
-  border-radius: 10px; 
-  font-size: 16px; 
-  font-weight: bold; 
+  border-radius: 8px; 
   cursor: pointer; 
-  transition: background 0.2s ease; 
+  font-weight: bold;
+  font-size: 16px;
+  transition: background 0.3s;
 }
 
-button:hover { background: #33a06f; }
+button:hover { background: #3aa876; }
 button:disabled { background: #cbd5e0; cursor: not-allowed; }
 
-/* AI Response Box */
-.response-box { 
-  margin-top: 25px; 
-  padding: 18px; 
-  background: #f0fff4; 
-  border-left: 6px solid #42b883; 
+.chatbox { 
+  max-height: 350px; 
+  overflow-y: auto; 
+  background: #edf2f7; 
+  padding: 15px; 
   border-radius: 8px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
 }
 
-.response-box h3 { margin: 0 0 8px 0; color: #276749; font-size: 1.1rem; }
-.response-box p { margin: 0; line-height: 1.5; color: #2d3748; }
-
-/* History Section */
-.history-section { 
-  margin-top: 35px; 
-  border-top: 2px solid #e2e8f0;
-  padding-top: 20px;
+.message { 
+  padding: 12px 16px; 
+  border-radius: 18px; 
+  max-width: 85%; 
+  line-height: 1.4;
 }
 
-.history-section h3 { font-size: 1.1rem; color: #718096; margin-bottom: 15px; }
-
-.history-section ul { list-style: none; padding: 0; }
-
-.history-section li { 
-  display: flex;
-  justify-content: space-between;
-  padding: 12px; 
-  background: #f8fafc;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  font-size: 14px; 
-  border: 1px solid #edf2f7;
+.user { 
+  background: #42b883; 
+  color: white; 
+  align-self: flex-end; 
+  border-bottom-right-radius: 2px;
 }
 
-.time-stamp { font-weight: bold; color: #42b883; margin-right: 15px; white-space: nowrap; }
-.history-text { color: #4a5568; text-align: right; }
-
-/* Error Message */
-.error-msg { 
-  color: #e53e3e; 
-  background: #fff5f5; 
-  padding: 12px; 
-  border-radius: 8px; 
-  margin-top: 15px; 
-  font-size: 14px;
-  text-align: center;
-  border: 1px solid #feb2b2;
+.ai { 
+  background: #ffffff; 
+  color: #2d3748; 
+  align-self: flex-start; 
+  border-bottom-left-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 </style>

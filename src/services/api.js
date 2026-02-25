@@ -1,5 +1,8 @@
 import axios from 'axios';
 
-export default axios.create({
-  baseURL: 'http://localhost:5001/api/moods'
+const api = axios.create({
+  // Vite uses import.meta.env, not process.env
+  baseURL: import.meta.env.VITE_API_URL 
 });
+
+export default api;
