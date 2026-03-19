@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Vite uses import.meta.env, not process.env
-  baseURL: import.meta.env.VITE_API_URL 
+  // Replace the old one with this:
+  baseURL: 'https://mood-tracker-api-production-7fd6.up.railway.app' 
 });
 
 export default api;
