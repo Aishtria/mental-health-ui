@@ -4,7 +4,7 @@ A full-stack, AI-powered mood tracking application designed to provide empatheti
 Live Links
 Frontend (UI): https://aishtria.github.io/mental-health-ui/
 
-Backend (API): [Your-Render-URL-Here]
+Backend (API): https://mental-health-api-5gvy.onrender.com
 
 Key Features
 Aesthetic UI: A responsive, mobile-friendly interface with a calming pink and purple theme.
@@ -34,7 +34,7 @@ users: Stores user identity (id, full_name, email).
 mood_entries: Stores moods linked to users via user_id (Foreign Key).
 
 Developer
-Trishia Soriano (3rd Year Computer Science Student / Frontend and UI/UX Developer)
+Trishia Soriano  / Frontend and UI/UX Developer)
 
 ## Project Setup
 
