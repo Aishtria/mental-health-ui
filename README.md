@@ -1,23 +1,40 @@
-# mental-health-ui
+Mental Health & Wellness Companion (Lab 7)
+A full-stack, AI-powered mood tracking application designed to provide empathetic support and maintain a relational history of user check-ins. Developed as part of SE2 Laboratory 7.
 
-This template should help get you started developing with Vue 3 in Vite.
+Live Links
+Frontend (UI): https://aishtria.github.io/mental-health-ui/
 
-## Recommended IDE Setup
+Backend (API): [Your-Render-URL-Here]
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Key Features
+Aesthetic UI: A responsive, mobile-friendly interface with a calming pink and purple theme.
 
-## Recommended Browser Setup
+AI Advisor: Integrated with Groq (Llama 3.3-70B) to provide context-aware, empathetic feedback.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+Auto-User Registration: Automatically detects new users and registers them in the database.
 
-## Customize configuration
+Relational Data: Uses MySQL (Railway) with a Foreign Key relationship between users and mood_entries.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+Tech Stack
+Frontend: Vue.js 3, Vite, Axios
+
+Backend: Node.js, Express.js
+
+AI Engine: Groq SDK (Llama-3.3-70b-versatile)
+
+Database: MySQL (hosted on Railway)
+
+Deployment: GitHub Pages (Frontend) and Render (Backend)
+
+Database Schema
+This project uses a relational structure:
+
+users: Stores user identity (id, full_name, email).
+
+mood_entries: Stores moods linked to users via user_id (Foreign Key).
+
+Developer
+Trishia Soriano (3rd Year Computer Science Student / Frontend and UI/UX Developer)
 
 ## Project Setup
 
