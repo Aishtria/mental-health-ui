@@ -1,4 +1,4 @@
-Mental Health & Wellness Companion (Lab 7)
+Mental Health & Wellness Companion
 A full-stack, AI-powered mood tracking application designed to provide empathetic support and maintain a relational history of user check-ins. Developed as part of SE2 Laboratory 7.
 
 Live Links
