@@ -8,6 +8,7 @@
         id="name"
         v-model="name"
         placeholder="Enter your full name..."
+        :disabled="loading"
       />
 
       <label for="mood">How are you feeling?</label>
@@ -15,14 +16,20 @@
         id="mood"
         v-model="mood"
         placeholder="Describe your current mood..."
+        :disabled="loading"
       ></textarea>
 
-      <button @click="submitEntry" :disabled="!name || !mood">
-        Submit Mood
+      <button @click="submitEntry" :disabled="!name || !mood || loading">
+        {{ loading ? 'Saving...' : 'Submit Mood' }}
       </button>
     </div>
 
     <div class="chatbox" ref="chatbox">
+      <!-- Welcome message -->
+      <div v-if="history.length === 0 && !loading" class="message ai">
+        <p>AI Advisor: Hello! How can I help you today?</p>
+      </div>
+
       <div
         v-for="(entry, index) in history"
         :key="index"
@@ -44,148 +51,94 @@ export default {
       name: "",
       mood: "",
       history: [],
+      loading: false,
     };
   },
+  mounted() {
+    this.fetchHistory(); 
+  },
   methods: {
-    getAIResponse(moodText) {
-      const lower = moodText.toLowerCase();
-      if (lower.includes("happy") || lower.includes("joy") || lower.includes("excited")) {
-        return "That's wonderful! Keep spreading positivity 😊";
-      } else if (lower.includes("sad") || lower.includes("down") || lower.includes("crying")) {
-        return "I'm sorry to hear that. Remember to take deep breaths and maybe talk to someone you trust 💛";
-      } else if (lower.includes("angry") || lower.includes("frustrated")) {
-        return "It’s okay to feel anger. Try calming exercises or go for a short walk 💨";
-      } else if (lower.includes("anxious") || lower.includes("nervous")) {
-        return "Take a few moments to breathe deeply. Mindfulness helps 🧘‍♀️";
-      } else {
-        return "Thank you for sharing your feelings! Every emotion is valid 🌟";
+    async fetchHistory() {
+      try {
+        const response = await api.get('/mood-history');
+        
+        // Ensure we handle both { data: [...] } and direct array responses
+        const rawData = response.data?.data || response.data || [];
+        
+        // Map backend columns to frontend chat display
+        const formattedHistory = [];
+        rawData.forEach(entry => {
+          formattedHistory.push({ 
+            sender: "user", 
+            text: `${entry.full_name || 'User'}: ${entry.mood_text || entry.mood}` 
+          });
+          formattedHistory.push({ 
+            sender: "ai", 
+            text: `AI Advisor: ${entry.ai_response || 'Thinking...'}` 
+          });
+        });
+
+        // Show newest messages at the bottom
+        this.history = formattedHistory;
+        this.scrollToBottom();
+
+      } catch (error) {
+        console.error("❌ Error loading history:", error.message);
       }
     },
+
     async submitEntry() {
-      // 1. Capture current values
-      const currentName = this.name;
-      const currentMood = this.mood;
+      if (this.loading) return;
 
-      // 2. Add user message to the UI history
-      this.history.push({
-        sender: "user",
-        text: `${currentName}: ${currentMood}`,
-      });
+      // Ensure the payload keys match exactly what your backend checks
+   const payload = {
+  full_name: this.name, // Matches 'full_name' in your table
+  mood_text: this.mood   // Matches 'mood_text' in your table
+};
 
-      // 3. Send to Backend (Render -> Railway)
+      this.loading = true;
+
       try {
-        await api.post('/mood', {
-          full_name: currentName,
-          mood_text: currentMood
-        });
-        console.log("✅ Data saved to Railway successfully!");
+        const response = await api.post('/mood', payload);
+        
+        // Check for success and handle different possible AI reply keys
+        if (response.data.success) {
+            const aiMsg = response.data.ai_reply || response.data.ai_response;
+
+            // Update UI
+            this.history.push({
+              sender: "user",
+              text: `${this.name}: ${this.mood}`
+            });
+
+            this.history.push({
+              sender: "ai",
+              text: `AI Advisor: ${aiMsg}`
+            });
+
+            this.mood = ""; // Clear only the mood field
+        }
+
       } catch (error) {
-        console.error("❌ Database error:", error);
+        // Detailed diagnostic for Lab 7
+        console.error("❌ API Failure:", error.response?.data?.error || error.message);
+        
         this.history.push({
           sender: "ai",
-          text: "System: Note saved locally, but database connection failed."
+          text: `System Error: ${errorDetail}.`
         });
+      } finally {
+        this.loading = false;
+        this.scrollToBottom();
       }
+    },
 
-      // 4. Generate and show AI response
-      const aiReply = this.getAIResponse(currentMood);
-      this.history.push({
-        sender: "ai",
-        text: `AI Advisor: ${aiReply}`,
-      });
-
-      // 5. Reset input and scroll down
-      this.mood = "";
+    scrollToBottom() {
       this.$nextTick(() => {
         const box = this.$refs.chatbox;
-        if (box) {
-          box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
-        }
+        if (box) box.scrollTop = box.scrollHeight;
       });
-    },
-  },
+    }
+  }
 };
 </script>
-
-<style scoped>
-.mood-app {
-  max-width: 500px;
-  margin: 40px auto;
-  padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-h2 { color: #2c3e50; text-align: center; }
-
-.form-group { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 12px; 
-  margin-bottom: 25px; 
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-label { font-weight: bold; color: #4a5568; }
-
-input, textarea { 
-  padding: 12px; 
-  border-radius: 8px; 
-  border: 1px solid #cbd5e0; 
-  font-size: 16px;
-}
-
-textarea { resize: vertical; min-height: 80px; }
-
-button { 
-  padding: 12px; 
-  background: #42b883; 
-  color: white; 
-  border: none; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  font-weight: bold;
-  font-size: 16px;
-  transition: background 0.3s;
-}
-
-button:hover { background: #3aa876; }
-button:disabled { background: #cbd5e0; cursor: not-allowed; }
-
-.chatbox { 
-  max-height: 350px; 
-  overflow-y: auto; 
-  background: #edf2f7; 
-  padding: 15px; 
-  border-radius: 8px; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 12px; 
-}
-
-.message { 
-  padding: 12px 16px; 
-  border-radius: 18px; 
-  max-width: 85%; 
-  line-height: 1.4;
-}
-
-.user { 
-  background: #42b883; 
-  color: white; 
-  align-self: flex-end; 
-  border-bottom-right-radius: 2px;
-}
-
-.ai { 
-  background: #ffffff; 
-  color: #2d3748; 
-  align-self: flex-start; 
-  border-bottom-left-radius: 2px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-</style>

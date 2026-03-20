@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 
-// Optional: remove style import if missing
-// import './assets/style.css';
+// Change 'style.css' to './assets/main.css'
+import './assets/main.css'; 
 
 createApp(App).mount('#app');
